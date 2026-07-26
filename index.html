@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="calculadora">
+    <h1 class="titulo">Calculadora</h1>
+
+    <div class="pantalla">
+      <div class="expresion" id="expresion" aria-hidden="true"></div>
+      <output class="resultado" id="resultado" role="status" aria-live="polite" aria-atomic="true">0</output>
+    </div>
+
+    <div class="teclado" id="teclado">
+      <button type="button" class="tecla accion doble" data-action="clear">AC</button>
+      <button type="button" class="tecla accion" data-action="backspace" aria-label="Borrar último carácter">⌫</button>
+      <button type="button" class="tecla operador" data-op="/" aria-label="Dividir">÷</button>
+
+      <button type="button" class="tecla" data-digit="7">7</button>
+      <button type="button" class="tecla" data-digit="8">8</button>
+      <button type="button" class="tecla" data-digit="9">9</button>
+      <button type="button" class="tecla operador" data-op="*" aria-label="Multiplicar">×</button>
+
+      <button type="button" class="tecla" data-digit="4">4</button>
+      <button type="button" class="tecla" data-digit="5">5</button>
+      <button type="button" class="tecla" data-digit="6">6</button>
+      <button type="button" class="tecla operador" data-op="-" aria-label="Restar">−</button>
+
+      <button type="button" class="tecla" data-digit="1">1</button>
+      <button type="button" class="tecla" data-digit="2">2</button>
+      <button type="button" class="tecla" data-digit="3">3</button>
+      <button type="button" class="tecla operador" data-op="+" aria-label="Sumar">+</button>
+
+      <button type="button" class="tecla doble" data-digit="0">0</button>
+      <button type="button" class="tecla" data-action="decimal" aria-label="Separador decimal">.</button>
+      <button type="button" class="tecla igual" data-action="equals" aria-label="Igual">=</button>
+    </div>
+  </main>
+</body>
+</html>
