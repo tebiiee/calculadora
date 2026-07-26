@@ -17,7 +17,7 @@ python3 -m http.server 8000
 
 | Archivo | Contenido |
 |---|---|
-| `index.html` | Estructura: display y teclado de botones. |
+| `index.html` | Estructura: calculadora (display y teclado) y panel lateral de historial. |
 | `styles.css` | Layout en grid, tema oscuro, foco visible, responsive. |
 | `script.js` | Máquina de estado, cálculo, formateo, historial y eventos. |
 
@@ -45,8 +45,9 @@ Las calculadoras reales no se comportan igual entre sí en los casos límite. Es
 
 ## Historial
 
-Bajo el teclado hay una lista con las operaciones ya evaluadas, la más reciente arriba.
+En un panel a la derecha de la calculadora hay una lista con las operaciones ya evaluadas, la más reciente arriba. En pantallas de menos de 720 px el panel se apila debajo.
 
+- **Mostrar u ocultar**: el botón «Historial», junto al título de la calculadora, alterna el panel. Al ocultarlo la calculadora vuelve a quedar centrada y el panel sale del orden de tabulación. El estado se guarda en `localStorage` bajo la clave `calculadora:panel:v1`; sin almacenamiento disponible el panel arranca visible.
 - **Qué se registra**: cada evaluación efectiva, tanto al pulsar `=` como al encadenar. Coherente con la semántica de arriba, `2 + 3 + 4 =` deja **dos** entradas: `5 + 4 = 9` y `2 + 3 = 5`. No se registran los cálculos que terminan en `Error`, ni el `=` repetido, ni el operador que sustituye a otro.
 - **Tope**: 20 entradas. La 21 desplaza a la más antigua.
 - **Persistencia**: se guarda en `localStorage` bajo la clave `calculadora:historial:v1`, así que sobrevive a recargas y a cerrar el navegador. Un valor corrupto o de otra versión se ignora y el historial arranca vacío.
@@ -58,7 +59,7 @@ Bajo el teclado hay una lista con las operaciones ya evaluadas, la más reciente
 - **Precisión**: se usa el punto flotante nativo IEEE-754. Los cálculos encadenados conservan el valor interno completo y el display redondea a 12 cifras significativas; aun así aplican las limitaciones habituales del punto flotante binario.
 - **Longitud de entrada**: máximo 12 dígitos por operando.
 - **Notación exponencial**: los resultados con valor absoluto ≥ 10¹² o < 10⁻⁹ se muestran en notación exponencial.
-- **Tests**: `node --test calculator.test.js` cubre precisión encadenada, Backspace y navegación/atajos del historial. La comprobación visual sigue siendo manual.
+- **Tests**: `node --test calculator.test.js` cubre precisión encadenada, Backspace, navegación/atajos del historial y el panel conmutable (visibilidad, `aria-expanded`, persistencia). El posicionamiento del panel no tiene test: la comprobación visual sigue siendo manual.
 - **Persistencia sobre `file://`**: abriendo `index.html` por doble clic, Safari bloquea `localStorage` (`SecurityError`) y Firefox es inconsistente; Chrome suele funcionar. Cuando el almacenamiento no está disponible, el historial funciona **en memoria durante la sesión** y se pierde al recargar — la calculadora sigue funcionando igual. Para persistencia garantizada, sirve la app con `python3 -m http.server 8000`.
 - **Historial**: solo lectura. No se puede reutilizar una entrada con clic, ni borrarlas de una en una, ni exportarlas.
 - **Fuera de alcance**: funciones científicas, porcentaje, cambio de signo y memoria.
