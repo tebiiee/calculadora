@@ -225,6 +225,8 @@ document.getElementById('limpiar-historial').addEventListener('click', () => {
 });
 
 document.addEventListener('keydown', (e) => {
+  // El historial tiene su propio botón: Enter ahí debe activarlo, no calcular.
+  if (e.target.closest?.('#historial')) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key;
 
