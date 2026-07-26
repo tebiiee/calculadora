@@ -1,0 +1,129 @@
+:root {
+  --fondo: #16181d;
+  --superficie: #1f232b;
+  --tecla: #2a2f3a;
+  --tecla-activa: #353b48;
+  --operador: #3a4152;
+  --acento: #f0a04b;
+  --texto: #f2f4f8;
+  --texto-tenue: #9aa3b2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.calculadora {
+  width: 100%;
+  max-width: 360px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--superficie);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+}
+
+.titulo {
+  margin: 0 0 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.pantalla {
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: 12px;
+  background: #12141a;
+  text-align: right;
+}
+
+.expresion {
+  min-height: 1.25rem;
+  font-size: 0.95rem;
+  color: var(--texto-tenue);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.resultado {
+  display: block;
+  font-size: 2.4rem;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.teclado {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.tecla {
+  min-height: 56px;
+  border: none;
+  border-radius: 12px;
+  background: var(--tecla);
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 1.25rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.tecla:hover {
+  background: var(--tecla-activa);
+}
+
+.tecla:active {
+  transform: translateY(1px);
+}
+
+.tecla:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.tecla.doble {
+  grid-column: span 2;
+}
+
+.tecla.operador {
+  background: var(--operador);
+}
+
+.tecla.accion {
+  color: var(--texto-tenue);
+}
+
+.tecla.igual {
+  background: var(--acento);
+  color: #16181d;
+  font-weight: 700;
+}
+
+@media (max-width: 380px) {
+  .resultado {
+    font-size: 2rem;
+  }
+
+  .tecla {
+    min-height: 52px;
+  }
+}
