@@ -2,6 +2,8 @@
 
 const MAX_DIGITS = 12;
 const SIMBOLO = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+const HISTORIAL_CLAVE = 'calculadora:historial:v1';
+const MAX_HISTORIAL = 20;
 
 const state = {
   current: '0',     // operando en edición (string, para controlar el '.')
@@ -13,6 +15,62 @@ const state = {
 
 const elResultado = document.getElementById('resultado');
 const elExpresion = document.getElementById('expresion');
+const elHistorialLista = document.getElementById('historial-lista');
+const elHistorialVacio = document.getElementById('historial-vacio');
+
+// --- Historial ------------------------------------------------------------
+// Sin localStorage utilizable (Safari sobre file://, modo privado sin cuota)
+// el historial vive solo en memoria y la calculadora se comporta igual.
+
+/** Safari lanza SecurityError al leer la propiedad, no solo al usarla. */
+function almacen() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function leerHistorial() {
+  try {
+    const crudo = almacen()?.getItem(HISTORIAL_CLAVE);
+    if (!crudo) return [];
+    const datos = JSON.parse(crudo);
+    if (!Array.isArray(datos)) return [];
+    return datos
+      .filter((e) => e && typeof e.expresion === 'string' && typeof e.resultado === 'string')
+      .slice(0, MAX_HISTORIAL);
+  } catch {
+    return []; // valor corrupto o de otra versión: se arranca vacío, sin propagar
+  }
+}
+
+function guardarHistorial() {
+  try {
+    almacen()?.setItem(HISTORIAL_CLAVE, JSON.stringify(historial));
+  } catch {
+    // Cuota agotada o almacenamiento bloqueado: se sigue con el historial en memoria.
+  }
+}
+
+/** Se invoca solo tras una evaluación efectiva; más recientes primero. */
+function registrarOperacion(a, op, b, r) {
+  historial.unshift({
+    expresion: `${formatNumber(a)} ${SIMBOLO[op]} ${formatNumber(b)}`,
+    resultado: formatNumber(r),
+    ts: Date.now(),
+  });
+  if (historial.length > MAX_HISTORIAL) historial.length = MAX_HISTORIAL;
+  guardarHistorial();
+}
+
+function limpiarHistorial() {
+  historial = [];
+  guardarHistorial();
+}
+
+let historial = leerHistorial();
+// --------------------------------------------------------------------------
 
 /** Redondeo de presentación: mata el ruido IEEE-754 y evita desbordar el display. */
 function formatNumber(n) {
@@ -70,8 +128,10 @@ function chooseOperator(op) {
   }
   // Encadenado: hay operación pendiente y un operando nuevo → evalúa primero.
   if (state.operator !== null) {
-    const r = compute(state.previous, state.operator, Number(state.current));
+    const b = Number(state.current);
+    const r = compute(state.previous, state.operator, b);
     if (r === null) return setError();
+    registrarOperacion(state.previous, state.operator, b, r);
     state.current = formatNumber(r);
   }
   state.previous = Number(state.current);
@@ -82,8 +142,10 @@ function chooseOperator(op) {
 function equals() {
   // '=' repetido (o sin operando nuevo) no repite la última operación.
   if (state.error || state.operator === null || state.overwrite) return;
-  const r = compute(state.previous, state.operator, Number(state.current));
+  const b = Number(state.current);
+  const r = compute(state.previous, state.operator, b);
   if (r === null) return setError();
+  registrarOperacion(state.previous, state.operator, b, r);
   state.current = formatNumber(r);
   state.previous = null;
   state.operator = null;
@@ -115,6 +177,28 @@ function render() {
   elExpresion.textContent = state.operator === null
     ? ''
     : `${formatNumber(state.previous)} ${SIMBOLO[state.operator]}`;
+  renderHistorial();
+}
+
+/** Reconstrucción completa: 20 nodos como máximo, siempre con textContent. */
+function renderHistorial() {
+  elHistorialVacio.hidden = historial.length > 0;
+  elHistorialLista.textContent = '';
+  for (const entrada of historial) {
+    const item = document.createElement('li');
+    item.className = 'historial-item';
+
+    const expresion = document.createElement('span');
+    expresion.className = 'historial-expresion';
+    expresion.textContent = entrada.expresion;
+
+    const resultado = document.createElement('span');
+    resultado.className = 'historial-resultado';
+    resultado.textContent = `= ${entrada.resultado}`;
+
+    item.append(expresion, resultado);
+    elHistorialLista.append(item);
+  }
 }
 
 const ACCIONES = {
@@ -134,7 +218,15 @@ document.getElementById('teclado').addEventListener('click', (e) => {
   render();
 });
 
+// Listener propio: colgarlo de #teclado colisionaría con el mapa ACCIONES.
+document.getElementById('limpiar-historial').addEventListener('click', () => {
+  limpiarHistorial();
+  render();
+});
+
 document.addEventListener('keydown', (e) => {
+  // El historial tiene su propio botón: Enter ahí debe activarlo, no calcular.
+  if (e.target.closest?.('#historial')) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key;
 

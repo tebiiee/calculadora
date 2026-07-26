@@ -118,6 +118,90 @@ body {
   font-weight: 700;
 }
 
+.historial {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tecla);
+}
+
+.historial-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.historial-titulo {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texto-tenue);
+}
+
+.historial-limpiar {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--tecla);
+  color: var(--texto-tenue);
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.historial-limpiar:hover {
+  background: var(--tecla-activa);
+}
+
+.historial-limpiar:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+.historial-vacio {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--texto-tenue);
+}
+
+.historial-lista {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.historial-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 2px;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.historial-item + .historial-item {
+  border-top: 1px solid var(--tecla);
+}
+
+.historial-expresion {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--texto-tenue);
+}
+
+.historial-resultado {
+  flex: none;
+  font-weight: 600;
+}
+
 @media (max-width: 380px) {
   .resultado {
     font-size: 2rem;
@@ -125,5 +209,9 @@ body {
 
   .tecla {
     min-height: 52px;
+  }
+
+  .historial-lista {
+    max-height: 140px;
   }
 }
