@@ -41,7 +41,7 @@ Las calculadoras reales no se comportan igual entre sí en los casos límite. Es
 - **Operador pulsado dos veces**: el segundo sustituye al primero. `8 + / 2 =` da `4`.
 - **División por cero**: el display muestra `Error` y la calculadora queda bloqueada hasta pulsar `C` (`Escape`), que la devuelve a `0`.
 - **Decimal**: un solo punto por operando; el segundo `.` se ignora.
-- **Backspace**: sobre un único dígito (o sobre un signo negativo residual) deja `0`.
+- **Backspace**: sobre un único dígito (o sobre un signo negativo residual) deja `0`. Después de elegir un operador o mostrar un resultado no altera ese valor; el siguiente dígito inicia un operando nuevo.
 
 ## Historial
 
@@ -55,10 +55,10 @@ Bajo el teclado hay una lista con las operaciones ya evaluadas, la más reciente
 
 ## Limitaciones conocidas
 
-- **Precisión**: se usa el punto flotante nativo IEEE-754 con redondeo de presentación a 12 cifras significativas. Eso hace que `0.1 + 0.2` muestre `0.3` en lugar de `0.30000000000000004`, pero también implica que un resultado legítimo con más de 12 cifras significativas se redondea.
+- **Precisión**: se usa el punto flotante nativo IEEE-754. Los cálculos encadenados conservan el valor interno completo y el display redondea a 12 cifras significativas; aun así aplican las limitaciones habituales del punto flotante binario.
 - **Longitud de entrada**: máximo 12 dígitos por operando.
 - **Notación exponencial**: los resultados con valor absoluto ≥ 10¹² o < 10⁻⁹ se muestran en notación exponencial.
-- **Sin tests automatizados**: el proyecto no tiene lint, tests ni typecheck configurados. La verificación de los criterios de aceptación es manual.
+- **Tests**: `node --test calculator.test.js` cubre precisión encadenada, Backspace y navegación/atajos del historial. La comprobación visual sigue siendo manual.
 - **Persistencia sobre `file://`**: abriendo `index.html` por doble clic, Safari bloquea `localStorage` (`SecurityError`) y Firefox es inconsistente; Chrome suele funcionar. Cuando el almacenamiento no está disponible, el historial funciona **en memoria durante la sesión** y se pierde al recargar — la calculadora sigue funcionando igual. Para persistencia garantizada, sirve la app con `python3 -m http.server 8000`.
 - **Historial**: solo lectura. No se puede reutilizar una entrada con clic, ni borrarlas de una en una, ni exportarlas.
 - **Fuera de alcance**: funciones científicas, porcentaje, cambio de signo y memoria.
