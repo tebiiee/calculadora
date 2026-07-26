@@ -25,6 +25,15 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Dos columnas: la calculadora conserva su ancho y el panel se le suma al lado. */
+.espacio-trabajo {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
 .calculadora {
   width: 100%;
   max-width: 360px;
@@ -34,8 +43,16 @@ body {
   box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
 }
 
+.cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .titulo {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -119,9 +136,19 @@ body {
 }
 
 .historial {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--tecla);
+  width: 100%;
+  max-width: 280px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--superficie);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+}
+
+/* El `display` va solo aquí: uno incondicional pisaría el `hidden` del
+   navegador y el panel no llegaría a ocultarse nunca. */
+.historial:not([hidden]) {
+  display: flex;
+  flex-direction: column;
 }
 
 .historial-cabecera {
@@ -141,7 +168,8 @@ body {
   color: var(--texto-tenue);
 }
 
-.historial-limpiar {
+.historial-limpiar,
+.historial-toggle {
   padding: 6px 10px;
   border: none;
   border-radius: 8px;
@@ -152,13 +180,20 @@ body {
   cursor: pointer;
 }
 
-.historial-limpiar:hover {
+.historial-limpiar:hover,
+.historial-toggle:hover {
   background: var(--tecla-activa);
 }
 
-.historial-limpiar:focus-visible {
+.historial-limpiar:focus-visible,
+.historial-toggle:focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
+}
+
+.historial-toggle[aria-expanded="true"] {
+  background: var(--operador);
+  color: var(--texto);
 }
 
 .historial-vacio {
@@ -167,11 +202,13 @@ body {
   color: var(--texto-tenue);
 }
 
+/* En columna la lista ocupa el alto sobrante del panel, que la calculadora fija. */
 .historial-lista {
   margin: 0;
   padding: 0;
   list-style: none;
-  max-height: 180px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -205,6 +242,27 @@ body {
 .historial-resultado {
   flex: none;
   font-weight: 600;
+}
+
+/* Sin sitio para dos columnas: el panel se apila bajo la calculadora. */
+@media (max-width: 720px) {
+  body {
+    align-items: flex-start; /* apilado, el contenido puede superar el alto */
+  }
+
+  .espacio-trabajo {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .historial {
+    max-width: 360px;
+  }
+
+  .historial-lista {
+    flex: none;
+    max-height: 180px;
+  }
 }
 
 @media (max-width: 380px) {

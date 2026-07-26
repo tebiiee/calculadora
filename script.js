@@ -3,6 +3,7 @@
 const MAX_DIGITS = 12;
 const SIMBOLO = { '+': '+', '-': '−', '*': '×', '/': '÷' };
 const HISTORIAL_CLAVE = 'calculadora:historial:v1';
+const PANEL_CLAVE = 'calculadora:panel:v1';
 const MAX_HISTORIAL = 20;
 
 const state = {
@@ -17,6 +18,8 @@ const elResultado = document.getElementById('resultado');
 const elExpresion = document.getElementById('expresion');
 const elHistorialLista = document.getElementById('historial-lista');
 const elHistorialVacio = document.getElementById('historial-vacio');
+const elHistorial = document.getElementById('historial');
+const elHistorialToggle = document.getElementById('historial-toggle');
 
 // --- Historial ------------------------------------------------------------
 // Sin localStorage utilizable (Safari sobre file://, modo privado sin cuota)
@@ -70,6 +73,31 @@ function limpiarHistorial() {
 }
 
 let historial = leerHistorial();
+
+// --- Panel lateral --------------------------------------------------------
+// Se oculta con la propiedad `hidden`: saca el panel del layout y del orden de
+// tabulación de una vez, y deja la calculadora centrada sin CSS adicional.
+
+function leerPanelVisible() {
+  try {
+    return almacen()?.getItem(PANEL_CLAVE) !== 'oculto'; // por defecto, visible
+  } catch {
+    return true;
+  }
+}
+
+function guardarPanelVisible(visible) {
+  try {
+    almacen()?.setItem(PANEL_CLAVE, visible ? 'visible' : 'oculto');
+  } catch {
+    // Igual que el historial: sin almacenamiento el estado dura la sesión.
+  }
+}
+
+function aplicarPanel(visible) {
+  elHistorial.hidden = !visible;
+  elHistorialToggle.setAttribute('aria-expanded', String(visible));
+}
 // --------------------------------------------------------------------------
 
 /** Redondeo de presentación: mata el ruido IEEE-754 y evita desbordar el display. */
@@ -229,9 +257,15 @@ document.getElementById('limpiar-historial').addEventListener('click', () => {
   render();
 });
 
+elHistorialToggle.addEventListener('click', () => {
+  const visible = elHistorial.hidden; // pasa a mostrarse
+  aplicarPanel(visible);
+  guardarPanelVisible(visible);
+});
+
 document.addEventListener('keydown', (e) => {
   // Enter y espacio pertenecen al control enfocado; los demás atajos siguen activos.
-  if (e.target.closest?.('#historial') && (e.key === 'Enter' || e.key === ' ')) return;
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('#historial, #historial-toggle')) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key;
 
@@ -248,4 +282,5 @@ document.addEventListener('keydown', (e) => {
   render();
 });
 
+aplicarPanel(leerPanelVisible());
 render();
