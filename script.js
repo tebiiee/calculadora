@@ -132,7 +132,8 @@ function chooseOperator(op) {
     const r = compute(state.previous, state.operator, b);
     if (r === null) return setError();
     registrarOperacion(state.previous, state.operator, b, r);
-    state.current = formatNumber(r);
+    // Conserva el valor IEEE-754 completo; el redondeo pertenece solo al display.
+    state.current = String(r);
   }
   state.previous = Number(state.current);
   state.operator = op;
@@ -146,7 +147,7 @@ function equals() {
   const r = compute(state.previous, state.operator, b);
   if (r === null) return setError();
   registrarOperacion(state.previous, state.operator, b, r);
-  state.current = formatNumber(r);
+  state.current = String(r);
   state.previous = null;
   state.operator = null;
   state.overwrite = true;
@@ -154,6 +155,8 @@ function equals() {
 
 function backspace() {
   if (state.error) return;
+  // Un resultado o un operador recién elegido no está en modo de edición.
+  if (state.overwrite) return;
   const recortado = state.current.slice(0, -1);
   state.current = recortado === '' || recortado === '-' ? '0' : recortado;
   state.overwrite = false;
@@ -173,7 +176,9 @@ function setError() {
 }
 
 function render() {
-  elResultado.textContent = state.error ? 'Error' : state.current;
+  elResultado.textContent = state.error
+    ? 'Error'
+    : state.overwrite ? formatNumber(Number(state.current)) : state.current;
   elExpresion.textContent = state.operator === null
     ? ''
     : `${formatNumber(state.previous)} ${SIMBOLO[state.operator]}`;
@@ -225,8 +230,8 @@ document.getElementById('limpiar-historial').addEventListener('click', () => {
 });
 
 document.addEventListener('keydown', (e) => {
-  // El historial tiene su propio botón: Enter ahí debe activarlo, no calcular.
-  if (e.target.closest?.('#historial')) return;
+  // Enter y espacio pertenecen al control enfocado; los demás atajos siguen activos.
+  if (e.target.closest?.('#historial') && (e.key === 'Enter' || e.key === ' ')) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key;
 
