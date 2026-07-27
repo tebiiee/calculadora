@@ -12,7 +12,20 @@
     <main class="calculadora">
       <div class="cabecera">
         <h1 class="titulo">Calculadora</h1>
-        <button type="button" class="historial-toggle" id="historial-toggle" aria-expanded="true" aria-controls="historial">Historial</button>
+        <div class="cabecera-acciones">
+          <label class="visualmente-oculto" for="tema">Tema</label>
+          <select class="tema" id="tema">
+            <option value="grafito">Grafito</option>
+            <option value="negro">Negro</option>
+            <option value="blanco">Blanco</option>
+            <option value="cian">Cian</option>
+            <option value="rosa">Rosa</option>
+            <option value="violeta">Violeta</option>
+            <option value="verde">Verde</option>
+            <option value="ambar">Ámbar</option>
+          </select>
+          <button type="button" class="historial-toggle" id="historial-toggle" aria-expanded="true" aria-controls="historial">Historial</button>
+        </div>
       </div>
 
       <div class="pantalla">

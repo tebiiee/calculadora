@@ -4,7 +4,10 @@ const MAX_DIGITS = 12;
 const SIMBOLO = { '+': '+', '-': '−', '*': '×', '/': '÷' };
 const HISTORIAL_CLAVE = 'calculadora:historial:v1';
 const PANEL_CLAVE = 'calculadora:panel:v1';
+const TEMA_CLAVE = 'calculadora:tema:v1';
 const MAX_HISTORIAL = 20;
+const TEMAS = ['grafito', 'negro', 'blanco', 'cian', 'rosa', 'violeta', 'verde', 'ambar'];
+const TEMA_POR_DEFECTO = 'grafito';
 
 const state = {
   current: '0',     // operando en edición (string, para controlar el '.')
@@ -20,6 +23,7 @@ const elHistorialLista = document.getElementById('historial-lista');
 const elHistorialVacio = document.getElementById('historial-vacio');
 const elHistorial = document.getElementById('historial');
 const elHistorialToggle = document.getElementById('historial-toggle');
+const elTema = document.getElementById('tema');
 
 // --- Historial ------------------------------------------------------------
 // Sin localStorage utilizable (Safari sobre file://, modo privado sin cuota)
@@ -97,6 +101,32 @@ function guardarPanelVisible(visible) {
 function aplicarPanel(visible) {
   elHistorial.hidden = !visible;
   elHistorialToggle.setAttribute('aria-expanded', String(visible));
+}
+
+// --- Tema -----------------------------------------------------------------
+// Puramente visual: nada de aquí toca `state`, `historial` ni `render()`.
+// El tema por defecto no lleva bloque en el CSS, hereda `:root`.
+
+function leerTema() {
+  try {
+    const guardado = almacen()?.getItem(TEMA_CLAVE);
+    return TEMAS.includes(guardado) ? guardado : TEMA_POR_DEFECTO;
+  } catch {
+    return TEMA_POR_DEFECTO; // valor corrupto o almacenamiento bloqueado
+  }
+}
+
+function guardarTema(tema) {
+  try {
+    almacen()?.setItem(TEMA_CLAVE, tema);
+  } catch {
+    // Igual que el historial: sin almacenamiento el tema dura la sesión.
+  }
+}
+
+function aplicarTema(tema) {
+  document.documentElement.setAttribute('data-tema', tema);
+  elTema.value = tema;
 }
 // --------------------------------------------------------------------------
 
@@ -263,7 +293,16 @@ elHistorialToggle.addEventListener('click', () => {
   guardarPanelVisible(visible);
 });
 
+elTema.addEventListener('change', () => {
+  const tema = TEMAS.includes(elTema.value) ? elTema.value : TEMA_POR_DEFECTO;
+  aplicarTema(tema);
+  guardarTema(tema);
+});
+
 document.addEventListener('keydown', (e) => {
+  // En un <select> los dígitos hacen typeahead, así que la guarda es total y no
+  // solo de las teclas de activación.
+  if (e.target.closest?.('#tema')) return;
   // Enter y espacio pertenecen al control enfocado; los demás atajos siguen activos.
   if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('#historial, #historial-toggle')) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -282,5 +321,6 @@ document.addEventListener('keydown', (e) => {
   render();
 });
 
+aplicarTema(leerTema());
 aplicarPanel(leerPanelVisible());
 render();

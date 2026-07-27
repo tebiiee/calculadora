@@ -10,7 +10,7 @@ function coincide(selector, id) {
   return selector.split(',').some((parte) => parte.trim() === id);
 }
 
-function loadCalculator(storage = new Map()) {
+function loadCalculator(storage = new Map(), { sinAlmacenamiento = false } = {}) {
   const elements = new Map();
   class FakeElement {
     constructor(id = '') {
@@ -29,6 +29,7 @@ function loadCalculator(storage = new Map()) {
   }
   const documentListeners = {};
   const document = {
+    documentElement: new FakeElement(),
     getElementById(id) {
       if (!elements.has(id)) elements.set(id, new FakeElement(id));
       return elements.get(id);
@@ -36,20 +37,24 @@ function loadCalculator(storage = new Map()) {
     createElement() { return new FakeElement(); },
     addEventListener(type, listener) { documentListeners[type] = listener; },
   };
-  const context = vm.createContext({
-    document,
-    window: {
-      localStorage: {
-        getItem: (key) => storage.get(key) ?? null,
-        setItem: (key, value) => storage.set(key, value),
-      },
-    },
-    console,
-  });
+  const window = {};
+  if (sinAlmacenamiento) {
+    // Safari sobre file:// lanza al leer la propiedad, no solo al usarla.
+    Object.defineProperty(window, 'localStorage', {
+      get() { throw new Error('SecurityError'); },
+    });
+  } else {
+    window.localStorage = {
+      getItem: (key) => storage.get(key) ?? null,
+      setItem: (key, value) => storage.set(key, value),
+    };
+  }
+  const context = vm.createContext({ document, window, console });
   vm.runInContext(readFileSync('script.js', 'utf8'), context);
   return {
     evaluate(source) { return vm.runInContext(source, context); },
     elemento(id) { return elements.get(id); },
+    raiz() { return document.documentElement; },
     /** `enfoque` es el selector del contenedor con el foco, o null para el body. */
     keydown(key, enfoque = null) {
       documentListeners.keydown({
