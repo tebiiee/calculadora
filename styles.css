@@ -7,6 +7,114 @@
   --acento: #f0a04b;
   --texto: #f2f4f8;
   --texto-tenue: #9aa3b2;
+  --pantalla: #12141a;
+  --sobre-acento: #16181d;
+  /* La sombra entera es el token: los temas claros bajan offset y opacidad a la vez. */
+  --sombra: 0 12px 32px rgb(0 0 0 / 0.35);
+}
+
+/* Temas: cada bloque sobre-escribe el mismo juego de variables. «Grafito» no
+   tiene bloque propio — es el `:root` de arriba, así que hereda por defecto.
+   Los ratios de contraste están calculados: todo par de texto llega a 4.5:1 y
+   todo contorno de foco a 3:1. */
+
+[data-tema="negro"] {
+  --fondo: #000000;
+  --superficie: #0d0d0d;
+  --tecla: #1c1c1c;
+  --tecla-activa: #2b2b2b;
+  --operador: #383838;
+  --acento: #ffffff;
+  --texto: #f5f5f5;
+  --texto-tenue: #a8a8a8;
+  --pantalla: #060606;
+  --sobre-acento: #000000;
+  --sombra: 0 12px 32px rgb(0 0 0 / 0.6);
+}
+
+[data-tema="blanco"] {
+  --fondo: #eef2f7;
+  --superficie: #ffffff;
+  --tecla: #e4e9f0;
+  --tecla-activa: #d3dae4;
+  --operador: #cdd7e5;
+  --acento: #2563eb;
+  --texto: #0f172a;
+  --texto-tenue: #4b5871;
+  --pantalla: #f7f9fc;
+  --sobre-acento: #ffffff;
+  /* Sobre fondo claro la sombra oscura del tema base resulta desproporcionada. */
+  --sombra: 0 10px 24px rgb(15 23 42 / 0.12);
+}
+
+[data-tema="cian"] {
+  --fondo: #061a20;
+  --superficie: #0d2b33;
+  --tecla: #154249;
+  --tecla-activa: #1d555e;
+  --operador: #1a5f68;
+  --acento: #22d3ee;
+  --texto: #ecfeff;
+  --texto-tenue: #9ccfd9;
+  --pantalla: #03131a;
+  --sobre-acento: #052e33;
+  --sombra: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+[data-tema="rosa"] {
+  --fondo: #1d0e18;
+  --superficie: #2b1724;
+  --tecla: #3e2132;
+  --tecla-activa: #502b41;
+  --operador: #5b3049;
+  --acento: #f472b6;
+  --texto: #fdf2f8;
+  --texto-tenue: #c9a3b6;
+  --pantalla: #160a12;
+  --sobre-acento: #3d0d26;
+  --sombra: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+[data-tema="violeta"] {
+  --fondo: #150f26;
+  --superficie: #1f1734;
+  --tecla: #2d2248;
+  --tecla-activa: #3a2d5c;
+  --operador: #43356a;
+  --acento: #a78bfa;
+  --texto: #f5f3ff;
+  --texto-tenue: #a99cc9;
+  --pantalla: #100b1d;
+  --sobre-acento: #2a0e63;
+  --sombra: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+[data-tema="verde"] {
+  --fondo: #061a13;
+  --superficie: #0d2b21;
+  --tecla: #154230;
+  --tecla-activa: #1d553e;
+  --operador: #1a5f45;
+  --acento: #34d399;
+  --texto: #ecfdf5;
+  --texto-tenue: #a0cdb8;
+  --pantalla: #03130e;
+  --sobre-acento: #04291e;
+  --sombra: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+[data-tema="ambar"] {
+  --fondo: #1b1408;
+  --superficie: #2b2110;
+  --tecla: #3e3018;
+  --tecla-activa: #503e20;
+  --operador: #5b4724;
+  --acento: #fbbf24;
+  --texto: #fffbeb;
+  --texto-tenue: #c9b183;
+  --pantalla: #140f05;
+  --sobre-acento: #3d2c04;
+  --sombra: 0 12px 32px rgb(0 0 0 / 0.45);
 }
 
 * {
@@ -40,7 +148,7 @@ body {
   padding: 16px;
   border-radius: 20px;
   background: var(--superficie);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+  box-shadow: var(--sombra);
 }
 
 .cabecera {
@@ -49,6 +157,48 @@ body {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 12px;
+  /* Con tres elementos en una tarjeta de 360 px, el grupo baja de línea antes
+     de desbordar. */
+  flex-wrap: wrap;
+}
+
+.cabecera-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* A este ancho no cabe una etiqueta visible junto al título y al botón; el
+   nombre sigue expuesto a los lectores de pantalla. */
+.visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.tema {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background: var(--tecla);
+  color: var(--texto-tenue);
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.tema:hover {
+  background: var(--tecla-activa);
+}
+
+.tema:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
 }
 
 .titulo {
@@ -64,7 +214,7 @@ body {
   padding: 12px 14px;
   margin-bottom: 16px;
   border-radius: 12px;
-  background: #12141a;
+  background: var(--pantalla);
   text-align: right;
 }
 
@@ -131,7 +281,7 @@ body {
 
 .tecla.igual {
   background: var(--acento);
-  color: #16181d;
+  color: var(--sobre-acento);
   font-weight: 700;
 }
 
@@ -141,7 +291,7 @@ body {
   padding: 16px;
   border-radius: 20px;
   background: var(--superficie);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+  box-shadow: var(--sombra);
 }
 
 /* El `display` va solo aquí: uno incondicional pisaría el `hidden` del
