@@ -17,9 +17,9 @@ python3 -m http.server 8000
 
 | Archivo | Contenido |
 |---|---|
-| `index.html` | Estructura: calculadora (display y teclado) y panel lateral de historial. |
-| `styles.css` | Layout en grid, tema oscuro, foco visible, responsive. |
-| `script.js` | Máquina de estado, cálculo, formateo, historial y eventos. |
+| `index.html` | Estructura: calculadora (display, selector de tema y teclado) y panel lateral de historial. |
+| `styles.css` | Layout en grid, los 8 temas de color, foco visible, responsive. |
+| `script.js` | Máquina de estado, cálculo, formateo, historial, tema y eventos. |
 
 ## Atajos de teclado
 
@@ -54,12 +54,30 @@ En un panel a la derecha de la calculadora hay una lista con las operaciones ya 
 - **Limpiar**: el botón «Limpiar historial» vacía la lista y el almacenamiento. No hay atajo de teclado para él: `C` y `Escape` ya están tomados por limpiar la calculadora.
 - **Privacidad**: las operaciones quedan en claro en el navegador de quien usa la app. No salen del equipo, pero son legibles desde DevTools.
 
+## Temas
+
+El selector de la cabecera, junto al botón «Historial», cambia la paleta de toda la interfaz. Es un cambio puramente visual: no altera el cálculo, el historial ni los atajos.
+
+| Tema | |
+|---|---|
+| **Grafito** | El de siempre, y el que se usa por defecto. |
+| **Negro** | Contraste máximo, acento blanco. |
+| **Blanco** | El único claro; lleva su propia sombra, más suave. |
+| **Cian**, **Rosa**, **Violeta**, **Verde**, **Ámbar** | Oscuros con acento de color. |
+
+- **Persistencia**: la elección se guarda en `localStorage` bajo la clave `calculadora:tema:v1`. Un valor desconocido o corrupto se ignora y se arranca en Grafito.
+- **Sobre `file://`**: sin almacenamiento disponible (ver más abajo) el tema funciona **en memoria durante la sesión** y al recargar se vuelve a Grafito.
+- **Destello al cargar**: `script.js` va con `defer`, así que el primer pintado usa Grafito y el tema guardado entra inmediatamente después. Se acepta a cambio de mantener un único script diferido, sin JavaScript bloqueante en el `<head>`.
+- **Sin atajo de teclado**: como en «Limpiar historial», las teclas candidatas ya están tomadas. Con el foco en el selector los atajos de la calculadora quedan desactivados por completo, porque en un `<select>` los dígitos sirven para buscar entre las opciones.
+- **Contraste**: en los 8 temas todo par de texto sobre su fondo llega a 4.5:1 (WCAG AA) y el contorno de foco a 3:1. La única excepción, heredada del diseño original, es la etiqueta de las teclas de acción (`AC`, `⌫`) en Grafito **mientras el puntero está encima**: 4.41:1.
+
 ## Limitaciones conocidas
 
 - **Precisión**: se usa el punto flotante nativo IEEE-754. Los cálculos encadenados conservan el valor interno completo y el display redondea a 12 cifras significativas; aun así aplican las limitaciones habituales del punto flotante binario.
 - **Longitud de entrada**: máximo 12 dígitos por operando.
 - **Notación exponencial**: los resultados con valor absoluto ≥ 10¹² o < 10⁻⁹ se muestran en notación exponencial.
-- **Tests**: `node --test calculator.test.js` cubre precisión encadenada, Backspace, navegación/atajos del historial y el panel conmutable (visibilidad, `aria-expanded`, persistencia). El posicionamiento del panel no tiene test: la comprobación visual sigue siendo manual.
-- **Persistencia sobre `file://`**: abriendo `index.html` por doble clic, Safari bloquea `localStorage` (`SecurityError`) y Firefox es inconsistente; Chrome suele funcionar. Cuando el almacenamiento no está disponible, el historial funciona **en memoria durante la sesión** y se pierde al recargar — la calculadora sigue funcionando igual. Para persistencia garantizada, sirve la app con `python3 -m http.server 8000`.
+- **Tests**: `node --test calculator.test.js` cubre precisión encadenada, Backspace, navegación/atajos del historial, el panel conmutable (visibilidad, `aria-expanded`, persistencia) y el selector de temas (aplicación, aislamiento del estado, persistencia, valor desconocido, ausencia de almacenamiento, teclado). Ni el posicionamiento del panel ni los colores en sí tienen test: la comprobación visual sigue siendo manual.
+- **Persistencia sobre `file://`**: abriendo `index.html` por doble clic, Safari bloquea `localStorage` (`SecurityError`) y Firefox es inconsistente; Chrome suele funcionar. Cuando el almacenamiento no está disponible, el historial y el tema funcionan **en memoria durante la sesión** y se pierden al recargar — la calculadora sigue funcionando igual. Para persistencia garantizada, sirve la app con `python3 -m http.server 8000`.
 - **Historial**: solo lectura. No se puede reutilizar una entrada con clic, ni borrarlas de una en una, ni exportarlas.
+- **Temas**: los 8 son fijos. No hay modo automático claro/oscuro (`prefers-color-scheme`), ni transición al cambiar de paleta, ni colores personalizables.
 - **Fuera de alcance**: funciones científicas, porcentaje, cambio de signo y memoria.
