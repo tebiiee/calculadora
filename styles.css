@@ -7,6 +7,10 @@
   --acento: #f0a04b;
   --texto: #f2f4f8;
   --texto-tenue: #9aa3b2;
+  --pantalla: #12141a;
+  --sobre-acento: #16181d;
+  /* La sombra entera es el token: los temas claros bajan offset y opacidad a la vez. */
+  --sombra: 0 12px 32px rgb(0 0 0 / 0.35);
 }
 
 * {
@@ -40,7 +44,7 @@ body {
   padding: 16px;
   border-radius: 20px;
   background: var(--superficie);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+  box-shadow: var(--sombra);
 }
 
 .cabecera {
@@ -64,7 +68,7 @@ body {
   padding: 12px 14px;
   margin-bottom: 16px;
   border-radius: 12px;
-  background: #12141a;
+  background: var(--pantalla);
   text-align: right;
 }
 
@@ -131,7 +135,7 @@ body {
 
 .tecla.igual {
   background: var(--acento);
-  color: #16181d;
+  color: var(--sobre-acento);
   font-weight: 700;
 }
 
@@ -141,7 +145,7 @@ body {
   padding: 16px;
   border-radius: 20px;
   background: var(--superficie);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.35);
+  box-shadow: var(--sombra);
 }
 
 /* El `display` va solo aquí: uno incondicional pisaría el `hidden` del
