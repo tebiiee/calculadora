@@ -198,6 +198,142 @@ test('el selector ofrece exactamente los 8 temas etiquetados', () => {
   assert.match(html, /<label[^>]*for="tema"/);
 });
 
+test('el botón alterna la visibilidad del bloque científico y sincroniza aria-pressed', () => {
+  const calculator = loadCalculator();
+  const bloque = calculator.elemento('teclado-cientifico');
+  const boton = calculator.elemento('modo-toggle');
+
+  assert.equal(bloque.hidden, true);
+  assert.equal(boton.attributes['aria-pressed'], 'false');
+
+  boton.listeners.click();
+  assert.equal(bloque.hidden, false);
+  assert.equal(boton.attributes['aria-pressed'], 'true');
+
+  boton.listeners.click();
+  assert.equal(bloque.hidden, true);
+  assert.equal(boton.attributes['aria-pressed'], 'false');
+});
+
+test('el modo científico sobrevive a una recarga', () => {
+  const storage = new Map();
+  const primera = loadCalculator(storage);
+  primera.elemento('modo-toggle').listeners.click();
+
+  const segunda = loadCalculator(storage);
+  assert.equal(segunda.elemento('teclado-cientifico').hidden, false);
+  assert.equal(segunda.elemento('modo-toggle').attributes['aria-pressed'], 'true');
+});
+
+test('un modo guardado desconocido cae al modo básico', () => {
+  const calculator = loadCalculator(new Map([['calculadora:modo:v1', 'astrofísica']]));
+  assert.equal(calculator.elemento('teclado-cientifico').hidden, true);
+  assert.equal(calculator.elemento('modo-toggle').attributes['aria-pressed'], 'false');
+});
+
+test('sin almacenamiento el modo se aplica en memoria sin propagar excepciones', () => {
+  const calculator = loadCalculator(new Map(), { sinAlmacenamiento: true });
+  assert.equal(calculator.elemento('teclado-cientifico').hidden, true);
+
+  const boton = calculator.elemento('modo-toggle');
+  assert.doesNotThrow(() => boton.listeners.click());
+  assert.equal(calculator.elemento('teclado-cientifico').hidden, false);
+});
+
+test('conmutar el modo no altera el estado de la calculadora ni el historial', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('2'); chooseOperator('+'); inputDigit('3'); equals();");
+  const antes = calculator.evaluate('JSON.stringify([state, historial])');
+
+  calculator.elemento('modo-toggle').listeners.click();
+
+  assert.equal(calculator.evaluate('JSON.stringify([state, historial])'), antes);
+});
+
+test('una función unaria se aplica al operando mostrado y el dígito siguiente inicia otro', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('9'); aplicarFuncion('raiz');");
+  assert.equal(calculator.evaluate('Number(state.current)'), 3);
+
+  calculator.evaluate("inputDigit('5');");
+  assert.equal(calculator.evaluate('state.current'), '5');
+});
+
+test('el resultado de una función unaria sí es un operando para el = pendiente', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('9'); chooseOperator('+'); inputDigit('3'); aplicarFuncion('raiz'); equals();");
+  assert.equal(calculator.evaluate('formatNumber(Number(state.current))'), '10.7320508076');
+
+  // Una constante tampoco deja la operación en espera: el operador encadena.
+  calculator.evaluate("clear(); inputDigit('2'); chooseOperator('+'); inputConstante('pi'); chooseOperator('+');");
+  assert.equal(calculator.evaluate('state.operator'), '+');
+  assert.equal(calculator.evaluate('formatNumber(Number(state.current))'), '5.14159265359');
+});
+
+test('los errores de dominio bloquean la calculadora hasta clear()', () => {
+  const calculator = loadCalculator();
+
+  for (const entrada of [
+    "inputDigit('0'); chooseOperator('-'); inputDigit('9'); equals(); aplicarFuncion('raiz');",
+    "aplicarFuncion('ln');",
+    "aplicarFuncion('log');",
+    "aplicarFuncion('inverso');",
+    "inputDigit('9'); inputDigit('0'); aplicarFuncion('tan');",
+  ]) {
+    calculator.evaluate(`clear(); ${entrada}`);
+    assert.equal(calculator.evaluate('state.error'), true, entrada);
+    calculator.evaluate("inputDigit('7');");
+    assert.equal(calculator.evaluate('state.current'), '0', entrada);
+  }
+
+  calculator.evaluate('clear();');
+  assert.equal(calculator.evaluate('state.error'), false);
+});
+
+test('la potencia es un operador binario más', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('2'); chooseOperator('^'); inputDigit('1'); inputDigit('0'); equals();");
+  assert.equal(calculator.evaluate('Number(state.current)'), 1024);
+});
+
+test('las trigonométricas trabajan en grados y sin ruido IEEE-754', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('1'); inputDigit('8'); inputDigit('0'); aplicarFuncion('sin');");
+  assert.equal(calculator.evaluate('Number(state.current)'), 0);
+
+  calculator.evaluate("clear(); inputDigit('6'); inputDigit('0'); aplicarFuncion('cos');");
+  assert.equal(calculator.evaluate('formatNumber(Number(state.current))'), '0.5');
+});
+
+test('Enter y Espacio con el foco en el botón de modo no evalúan la operación pendiente', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('2'); chooseOperator('+'); inputDigit('3');");
+
+  for (const tecla of ['Enter', ' ']) calculator.keydown(tecla, '#modo-toggle');
+
+  assert.equal(calculator.evaluate('state.operator'), '+');
+  assert.equal(calculator.evaluate('state.current'), '3');
+});
+
+test('el bloque científico arranca oculto y el botón lo declara con aria-controls', () => {
+  const html = readFileSync('index.html', 'utf8');
+
+  assert.match(html, /id="teclado-cientifico"[^>]*hidden/);
+  assert.match(html, /id="modo-toggle"[^>]*aria-pressed="false"/);
+  assert.match(html, /id="modo-toggle"[^>]*aria-controls="teclado-cientifico"/);
+});
+
+test('el teclado básico conserva sus 18 teclas por delante del bloque científico', () => {
+  const html = readFileSync('index.html', 'utf8');
+  const teclado = html.slice(html.indexOf('id="teclado"'), html.indexOf('</main>'));
+  const basico = teclado.slice(0, teclado.indexOf('id="teclado-cientifico"'));
+  const cientifico = teclado.slice(teclado.indexOf('id="teclado-cientifico"'));
+
+  // 18 botones en 20 celdas: `AC` y `0` ocupan dos columnas cada uno.
+  assert.equal(basico.match(/<button/g).length, 18);
+  assert.equal(cientifico.match(/<button/g).length, 11);
+});
+
 test('el historial se renderiza fuera de la tarjeta de la calculadora', () => {
   const html = readFileSync('index.html', 'utf8');
   const calculadora = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
