@@ -24,6 +24,7 @@
             <option value="verde">Verde</option>
             <option value="ambar">Ámbar</option>
           </select>
+          <button type="button" class="modo-toggle" id="modo-toggle" aria-pressed="false" aria-controls="teclado-cientifico">Científica</button>
           <button type="button" class="historial-toggle" id="historial-toggle" aria-expanded="true" aria-controls="historial">Historial</button>
         </div>
       </div>
@@ -56,6 +57,24 @@
         <button type="button" class="tecla doble" data-digit="0">0</button>
         <button type="button" class="tecla" data-action="decimal" aria-label="Separador decimal">.</button>
         <button type="button" class="tecla igual" data-action="equals" aria-label="Igual">=</button>
+
+        <!-- Último hijo del teclado: al conmutar no desplaza las teclas de
+             arriba, y hereda la delegación de clics de #teclado. -->
+        <div class="teclado-cientifico" id="teclado-cientifico" hidden>
+          <button type="button" class="tecla cientifica" data-fn="raiz" aria-label="Raíz cuadrada">√</button>
+          <button type="button" class="tecla cientifica" data-fn="cuadrado" aria-label="Elevar al cuadrado">x²</button>
+          <button type="button" class="tecla cientifica operador" data-op="^" aria-label="Elevar a una potencia">xʸ</button>
+          <button type="button" class="tecla cientifica" data-fn="inverso" aria-label="Inverso">1/x</button>
+
+          <button type="button" class="tecla cientifica" data-fn="ln" aria-label="Logaritmo natural">ln</button>
+          <button type="button" class="tecla cientifica" data-fn="log" aria-label="Logaritmo decimal">log</button>
+          <button type="button" class="tecla cientifica" data-constante="pi" aria-label="Pi">π</button>
+          <button type="button" class="tecla cientifica" data-constante="e" aria-label="Número e">e</button>
+
+          <button type="button" class="tecla cientifica" data-fn="sin" aria-label="Seno en grados">sin</button>
+          <button type="button" class="tecla cientifica" data-fn="cos" aria-label="Coseno en grados">cos</button>
+          <button type="button" class="tecla cientifica" data-fn="tan" aria-label="Tangente en grados">tan</button>
+        </div>
       </div>
     </main>
 
