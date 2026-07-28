@@ -14,6 +14,10 @@ const state = {
   previous: null,   // operando acumulado (number)
   operator: null,   // '+' | '-' | '*' | '/'
   overwrite: false, // el próximo dígito reemplaza current
+  // Se eligió operador o '=' y todavía no hay operando nuevo. Coincide con
+  // `overwrite` en todos los flujos de teclado, pero no en un resultado
+  // recién calculado que sí cuenta como operando.
+  esperandoOperando: false,
   error: false,     // solo clear() recupera
 };
 
@@ -160,6 +164,7 @@ function inputDigit(d) {
   if (state.overwrite || state.current === '0') {
     state.current = d;
     state.overwrite = false;
+    state.esperandoOperando = false;
     return;
   }
   if (contarDigitos(state.current) >= MAX_DIGITS) return;
@@ -171,6 +176,7 @@ function inputDecimal() {
   if (state.overwrite) {
     state.current = '0.';
     state.overwrite = false;
+    state.esperandoOperando = false;
     return;
   }
   if (state.current.includes('.')) return;
@@ -180,7 +186,7 @@ function inputDecimal() {
 function chooseOperator(op) {
   if (state.error) return;
   // Operador pulsado dos veces seguidas: sustituye al anterior, no evalúa.
-  if (state.operator !== null && state.overwrite) {
+  if (state.operator !== null && state.esperandoOperando) {
     state.operator = op;
     return;
   }
@@ -196,11 +202,12 @@ function chooseOperator(op) {
   state.previous = Number(state.current);
   state.operator = op;
   state.overwrite = true;
+  state.esperandoOperando = true;
 }
 
 function equals() {
   // '=' repetido (o sin operando nuevo) no repite la última operación.
-  if (state.error || state.operator === null || state.overwrite) return;
+  if (state.error || state.operator === null || state.esperandoOperando) return;
   const b = Number(state.current);
   const r = compute(state.previous, state.operator, b);
   if (r === null) return setError();
@@ -209,6 +216,7 @@ function equals() {
   state.previous = null;
   state.operator = null;
   state.overwrite = true;
+  state.esperandoOperando = true;
 }
 
 function backspace() {
@@ -225,6 +233,7 @@ function clear() {
   state.previous = null;
   state.operator = null;
   state.overwrite = false;
+  state.esperandoOperando = false;
   state.error = false;
 }
 
