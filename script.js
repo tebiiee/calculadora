@@ -1,10 +1,11 @@
 'use strict';
 
 const MAX_DIGITS = 12;
-const SIMBOLO = { '+': '+', '-': '−', '*': '×', '/': '÷' };
+const SIMBOLO = { '+': '+', '-': '−', '*': '×', '/': '÷', '^': '^' };
 const HISTORIAL_CLAVE = 'calculadora:historial:v1';
 const PANEL_CLAVE = 'calculadora:panel:v1';
 const TEMA_CLAVE = 'calculadora:tema:v1';
+const MODO_CLAVE = 'calculadora:modo:v1';
 const MAX_HISTORIAL = 20;
 const TEMAS = ['grafito', 'negro', 'blanco', 'cian', 'rosa', 'violeta', 'verde', 'ambar'];
 const TEMA_POR_DEFECTO = 'grafito';
@@ -14,6 +15,10 @@ const state = {
   previous: null,   // operando acumulado (number)
   operator: null,   // '+' | '-' | '*' | '/'
   overwrite: false, // el próximo dígito reemplaza current
+  // Se eligió operador o '=' y todavía no hay operando nuevo. Coincide con
+  // `overwrite` en todos los flujos de teclado, pero no en un resultado
+  // recién calculado que sí cuenta como operando.
+  esperandoOperando: false,
   error: false,     // solo clear() recupera
 };
 
@@ -24,6 +29,8 @@ const elHistorialVacio = document.getElementById('historial-vacio');
 const elHistorial = document.getElementById('historial');
 const elHistorialToggle = document.getElementById('historial-toggle');
 const elTema = document.getElementById('tema');
+const elModoToggle = document.getElementById('modo-toggle');
+const elTecladoCientifico = document.getElementById('teclado-cientifico');
 
 // --- Historial ------------------------------------------------------------
 // Sin localStorage utilizable (Safari sobre file://, modo privado sin cuota)
@@ -61,14 +68,18 @@ function guardarHistorial() {
 }
 
 /** Se invoca solo tras una evaluación efectiva; más recientes primero. */
-function registrarOperacion(a, op, b, r) {
-  historial.unshift({
-    expresion: `${formatNumber(a)} ${SIMBOLO[op]} ${formatNumber(b)}`,
-    resultado: formatNumber(r),
-    ts: Date.now(),
-  });
+function anotar(expresion, r) {
+  historial.unshift({ expresion, resultado: formatNumber(r), ts: Date.now() });
   if (historial.length > MAX_HISTORIAL) historial.length = MAX_HISTORIAL;
   guardarHistorial();
+}
+
+function registrarOperacion(a, op, b, r) {
+  anotar(`${formatNumber(a)} ${SIMBOLO[op]} ${formatNumber(b)}`, r);
+}
+
+function registrarFuncion(nombre, x, r) {
+  anotar(FUNCIONES[nombre].etiqueta(formatNumber(x)), r);
 }
 
 function limpiarHistorial() {
@@ -128,6 +139,34 @@ function aplicarTema(tema) {
   document.documentElement.setAttribute('data-tema', tema);
   elTema.value = tema;
 }
+
+// --- Modo científico ------------------------------------------------------
+// Solo muestra u oculta teclas: no toca `state` ni `historial`. Cualquier
+// valor guardado que no sea 'cientifico' cae al modo básico.
+
+let modoCientifico = false;
+
+function leerModo() {
+  try {
+    return almacen()?.getItem(MODO_CLAVE) === 'cientifico';
+  } catch {
+    return false; // valor corrupto o almacenamiento bloqueado
+  }
+}
+
+function guardarModo(cientifico) {
+  try {
+    almacen()?.setItem(MODO_CLAVE, cientifico ? 'cientifico' : 'basico');
+  } catch {
+    // Igual que el tema: sin almacenamiento el modo dura la sesión.
+  }
+}
+
+function aplicarModo(cientifico) {
+  modoCientifico = cientifico;
+  elTecladoCientifico.hidden = !cientifico;
+  elModoToggle.setAttribute('aria-pressed', String(cientifico));
+}
 // --------------------------------------------------------------------------
 
 /** Redondeo de presentación: mata el ruido IEEE-754 y evita desbordar el display. */
@@ -146,10 +185,40 @@ function compute(a, op, b) {
     case '-': r = a - b; break;
     case '*': r = a * b; break;
     case '/': r = b === 0 ? NaN : a / b; break;
+    case '^': r = Math.pow(a, b); break;
     default: return null;
   }
   return Number.isFinite(r) ? r : null;
 }
+
+// --- Funciones científicas ------------------------------------------------
+// Unarias: se aplican de inmediato sobre el operando en pantalla, así que la
+// máquina de estado sigue modelando solo operaciones binarias. Ninguna lleva
+// guarda de dominio: √(-9) da NaN, ln(0) da -Infinity y 1/0 da Infinity, y
+// aplicarFuncion() los convierte en Error con la misma prueba que compute().
+
+const EPSILON_TRIG = 1e-12;
+
+const radianes = (g) => (g * Math.PI) / 180;
+/** Sin esto sin(180°) mostraría 1.224647e-16 en vez de 0. */
+const limpiar = (x) => (Math.abs(x) < EPSILON_TRIG ? 0 : x);
+const seno = (g) => limpiar(Math.sin(radianes(g)));
+const coseno = (g) => limpiar(Math.cos(radianes(g)));
+
+const FUNCIONES = {
+  raiz: { aplicar: Math.sqrt, etiqueta: (x) => `√(${x})` },
+  cuadrado: { aplicar: (x) => x * x, etiqueta: (x) => `${x}²` },
+  inverso: { aplicar: (x) => 1 / x, etiqueta: (x) => `1/${x}` },
+  ln: { aplicar: Math.log, etiqueta: (x) => `ln(${x})` },
+  log: { aplicar: Math.log10, etiqueta: (x) => `log(${x})` },
+  sin: { aplicar: seno, etiqueta: (x) => `sin(${x})` },
+  cos: { aplicar: coseno, etiqueta: (x) => `cos(${x})` },
+  // sin/cos y no Math.tan: así tan(90°) es 1/0 → Error, la singularidad real,
+  // en vez del 1.633e16 que devuelve el punto flotante.
+  tan: { aplicar: (g) => seno(g) / coseno(g), etiqueta: (x) => `tan(${x})` },
+};
+
+const CONSTANTES = { pi: Math.PI, e: Math.E };
 
 function contarDigitos(s) {
   return s.replace(/[^0-9]/g, '').length;
@@ -160,6 +229,7 @@ function inputDigit(d) {
   if (state.overwrite || state.current === '0') {
     state.current = d;
     state.overwrite = false;
+    state.esperandoOperando = false;
     return;
   }
   if (contarDigitos(state.current) >= MAX_DIGITS) return;
@@ -171,6 +241,7 @@ function inputDecimal() {
   if (state.overwrite) {
     state.current = '0.';
     state.overwrite = false;
+    state.esperandoOperando = false;
     return;
   }
   if (state.current.includes('.')) return;
@@ -180,7 +251,7 @@ function inputDecimal() {
 function chooseOperator(op) {
   if (state.error) return;
   // Operador pulsado dos veces seguidas: sustituye al anterior, no evalúa.
-  if (state.operator !== null && state.overwrite) {
+  if (state.operator !== null && state.esperandoOperando) {
     state.operator = op;
     return;
   }
@@ -196,11 +267,12 @@ function chooseOperator(op) {
   state.previous = Number(state.current);
   state.operator = op;
   state.overwrite = true;
+  state.esperandoOperando = true;
 }
 
 function equals() {
   // '=' repetido (o sin operando nuevo) no repite la última operación.
-  if (state.error || state.operator === null || state.overwrite) return;
+  if (state.error || state.operator === null || state.esperandoOperando) return;
   const b = Number(state.current);
   const r = compute(state.previous, state.operator, b);
   if (r === null) return setError();
@@ -209,6 +281,27 @@ function equals() {
   state.previous = null;
   state.operator = null;
   state.overwrite = true;
+  state.esperandoOperando = true;
+}
+
+/** El resultado no está en edición, pero sí es un operando: no espera otro. */
+function aplicarFuncion(nombre) {
+  if (state.error) return;
+  const x = Number(state.current);
+  const r = FUNCIONES[nombre].aplicar(x);
+  if (!Number.isFinite(r)) return setError();
+  registrarFuncion(nombre, x, r);
+  state.current = String(r);
+  state.overwrite = true;
+  state.esperandoOperando = false;
+}
+
+/** Una constante es entrada, no evaluación: no se registra en el historial. */
+function inputConstante(nombre) {
+  if (state.error) return;
+  state.current = String(CONSTANTES[nombre]);
+  state.overwrite = true;
+  state.esperandoOperando = false;
 }
 
 function backspace() {
@@ -225,6 +318,7 @@ function clear() {
   state.previous = null;
   state.operator = null;
   state.overwrite = false;
+  state.esperandoOperando = false;
   state.error = false;
 }
 
@@ -274,10 +368,14 @@ const ACCIONES = {
 document.getElementById('teclado').addEventListener('click', (e) => {
   const boton = e.target.closest('button');
   if (!boton) return;
-  const { digit, op, action } = boton.dataset;
+  // El bloque científico va dentro de #teclado, así que `closest` lo cubre
+  // con este mismo listener.
+  const { digit, op, action, fn, constante } = boton.dataset;
   if (digit !== undefined) inputDigit(digit);
   else if (op !== undefined) chooseOperator(op);
   else if (action !== undefined) ACCIONES[action]();
+  else if (fn !== undefined) aplicarFuncion(fn);
+  else if (constante !== undefined) inputConstante(constante);
   render();
 });
 
@@ -293,6 +391,12 @@ elHistorialToggle.addEventListener('click', () => {
   guardarPanelVisible(visible);
 });
 
+elModoToggle.addEventListener('click', () => {
+  const cientifico = elTecladoCientifico.hidden; // pasa a mostrarse
+  aplicarModo(cientifico);
+  guardarModo(cientifico);
+});
+
 elTema.addEventListener('change', () => {
   const tema = TEMAS.includes(elTema.value) ? elTema.value : TEMA_POR_DEFECTO;
   aplicarTema(tema);
@@ -304,7 +408,7 @@ document.addEventListener('keydown', (e) => {
   // solo de las teclas de activación.
   if (e.target.closest?.('#tema')) return;
   // Enter y espacio pertenecen al control enfocado; los demás atajos siguen activos.
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('#historial, #historial-toggle')) return;
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest?.('#historial, #historial-toggle, #modo-toggle')) return;
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key;
 
@@ -313,6 +417,9 @@ document.addEventListener('keydown', (e) => {
   else if (k === '+' || k === '-') chooseOperator(k);
   else if (k === '*' || k === 'x' || k === 'X') chooseOperator('*');
   else if (k === '/') { e.preventDefault(); chooseOperator('/'); } // evita el quick-find de Firefox
+  // Único atajo del modo científico, y solo con el modo activo: el básico no
+  // gana comportamiento oculto. Las letras (s, c, l) chocan con C = limpiar.
+  else if (k === '^' && modoCientifico) chooseOperator('^');
   else if (k === 'Enter' || k === '=') { e.preventDefault(); equals(); }
   else if (k === 'Backspace') { e.preventDefault(); backspace(); }
   else if (k === 'Escape' || k === 'c' || k === 'C') clear();
@@ -323,4 +430,5 @@ document.addEventListener('keydown', (e) => {
 
 aplicarTema(leerTema());
 aplicarPanel(leerPanelVisible());
+aplicarModo(leerModo());
 render();

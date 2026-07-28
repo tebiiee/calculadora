@@ -285,6 +285,25 @@ body {
   font-weight: 700;
 }
 
+/* Ocupa la fila entera del teclado y repite sus 4 columnas: las teclas nuevas
+   miden lo mismo que las básicas a cualquier ancho. El `display` va en el
+   `:not([hidden])` para no pisar el ocultado del navegador. */
+.teclado-cientifico {
+  grid-column: 1 / -1;
+  gap: 8px;
+}
+
+.teclado-cientifico:not([hidden]) {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Etiquetas de hasta tres caracteres (`1/x`, `log`): piden menos cuerpo. */
+.tecla.cientifica {
+  min-height: 48px;
+  font-size: 1rem;
+}
+
 .historial {
   width: 100%;
   max-width: 280px;
@@ -319,7 +338,8 @@ body {
 }
 
 .historial-limpiar,
-.historial-toggle {
+.historial-toggle,
+.modo-toggle {
   padding: 6px 10px;
   border: none;
   border-radius: 8px;
@@ -331,17 +351,20 @@ body {
 }
 
 .historial-limpiar:hover,
-.historial-toggle:hover {
+.historial-toggle:hover,
+.modo-toggle:hover {
   background: var(--tecla-activa);
 }
 
 .historial-limpiar:focus-visible,
-.historial-toggle:focus-visible {
+.historial-toggle:focus-visible,
+.modo-toggle:focus-visible {
   outline: 2px solid var(--acento);
   outline-offset: 2px;
 }
 
-.historial-toggle[aria-expanded="true"] {
+.historial-toggle[aria-expanded="true"],
+.modo-toggle[aria-pressed="true"] {
   background: var(--operador);
   color: var(--texto);
 }
@@ -422,6 +445,10 @@ body {
 
   .tecla {
     min-height: 52px;
+  }
+
+  .tecla.cientifica {
+    min-height: 44px;
   }
 
   .historial-lista {
