@@ -1,6 +1,6 @@
 # Calculadora
 
-Calculadora web con las cuatro operaciones básicas (suma, resta, multiplicación y división) y un modo científico conmutable, escrita en HTML, CSS y JavaScript vanilla. Sin dependencias, sin build step y sin gestor de paquetes.
+Calculadora web con las cuatro operaciones básicas (suma, resta, multiplicación y división), porcentaje, cambio de signo y un modo científico conmutable, escrita en HTML, CSS y JavaScript vanilla. Sin dependencias, sin build step y sin gestor de paquetes.
 
 ## Cómo abrirla
 
@@ -17,7 +17,7 @@ python3 -m http.server 8000
 
 | Archivo | Contenido |
 |---|---|
-| `index.html` | Estructura: calculadora (display, selector de tema, teclado y bloque científico) y panel lateral de historial. |
+| `index.html` | Estructura: calculadora (display, selector de tema, teclado, bloque científico y pista de teclado) y panel lateral de historial. |
 | `styles.css` | Layout en grid, los 8 temas de color, foco visible, responsive. |
 | `script.js` | Máquina de estado, cálculo, funciones científicas, formateo, historial, tema, modo y eventos. |
 
@@ -28,6 +28,7 @@ python3 -m http.server 8000
 | `0`–`9` | Dígitos |
 | `.` o `,` | Separador decimal |
 | `+` `-` `*` (o `x`) `/` | Operadores |
+| `%` | Porcentaje |
 | `^` | Potencia — **solo con el modo científico activo** |
 | `Enter` o `=` | Calcular |
 | `Backspace` | Borrar el último carácter |
@@ -42,7 +43,9 @@ Las calculadoras reales no se comportan igual entre sí en los casos límite. Es
 - **Operador pulsado dos veces**: el segundo sustituye al primero. `8 + / 2 =` da `4`.
 - **División por cero**: el display muestra `Error` y la calculadora queda bloqueada hasta pulsar `C` (`Escape`), que la devuelve a `0`.
 - **Decimal**: un solo punto por operando; el segundo `.` se ignora.
-- **Backspace**: sobre un único dígito (o sobre un signo negativo residual) deja `0`. Después de elegir un operador o mostrar un resultado no altera ese valor; el siguiente dígito inicia un operando nuevo.
+- **Porcentaje, como en una calculadora de bolsillo**: con `+` o `−` pendiente, `%` convierte el operando en ese porcentaje del acumulado: `200 + 10 %` muestra `20` y `=` da `220`. Con `×`, `÷` o `xʸ` pendiente, o sin operación, divide entre 100: `200 × 10 %` muestra `0.1` y `=` da `20`. Igual que `π`, es entrada y no evaluación: no deja entrada en el historial (el `=` sí).
+- **Cambio de signo (`±`)**: alterna el signo del operando en edición y se puede seguir escribiendo (`12 ± 3` → `-123`); sobre `0` no hace nada. Sobre un resultado, o justo después de elegir operador, niega el valor mostrado y lo deja como operando: `8 + ± =` da `0`. No tiene atajo de teclado.
+- **Backspace**: sobre un único dígito (o sobre un signo negativo residual, también un `-0`) deja `0`. Después de elegir un operador o mostrar un resultado no altera ese valor; el siguiente dígito inicia un operando nuevo.
 
 ## Modo científico
 
@@ -70,7 +73,8 @@ En un panel a la derecha de la calculadora hay una lista con las operaciones ya 
 
 - **Mostrar u ocultar**: el botón «Historial», junto al título de la calculadora, alterna el panel. Al ocultarlo la calculadora vuelve a quedar centrada y el panel sale del orden de tabulación. El estado se guarda en `localStorage` bajo la clave `calculadora:panel:v1`; sin almacenamiento disponible el panel arranca visible.
 - **Qué se registra**: cada evaluación efectiva, tanto al pulsar `=` como al encadenar. Coherente con la semántica de arriba, `2 + 3 + 4 =` deja **dos** entradas: `5 + 4 = 9` y `2 + 3 = 5`. También las funciones unarias del modo científico, con su propia forma: `√(9) = 3`, `9² = 81`, `1/4 = 0.25`. No se registran los cálculos que terminan en `Error`, ni el `=` repetido, ni el operador que sustituye a otro, ni las constantes `π` y `e` (son entrada, no evaluación).
-- **Tope**: 20 entradas. La 21 desplaza a la más antigua.
+- **Tope**: 20 entradas. La 21 desplaza a la más antigua. El contador junto al título («3 de 20») muestra cuántas hay.
+- **Reutilizar**: cada entrada es un botón. Tocarla mete su resultado como operando, igual que `π`: sustituye el número en pantalla y conserva la operación pendiente (`5 × [220] =` da `1100`). No duplica la entrada ni funciona con la calculadora en `Error`. Con el teclado (Tab + Enter) el foco se queda en la entrada; con un clic no, así que el `Enter` siguiente sigue siendo `=`.
 - **Persistencia**: se guarda en `localStorage` bajo la clave `calculadora:historial:v1`, así que sobrevive a recargas y a cerrar el navegador. Un valor corrupto o de otra versión se ignora y el historial arranca vacío.
 - **Limpiar**: el botón «Limpiar historial» vacía la lista y el almacenamiento. No hay atajo de teclado para él: `C` y `Escape` ya están tomados por limpiar la calculadora.
 - **Privacidad**: las operaciones quedan en claro en el navegador de quien usa la app. No salen del equipo, pero son legibles desde DevTools.
@@ -97,9 +101,9 @@ El selector de la cabecera, junto a los botones «Científica» e «Historial»,
 - **Precisión**: se usa el punto flotante nativo IEEE-754. Los cálculos encadenados conservan el valor interno completo y el display redondea a 12 cifras significativas; aun así aplican las limitaciones habituales del punto flotante binario.
 - **Longitud de entrada**: máximo 12 dígitos por operando.
 - **Notación exponencial**: los resultados con valor absoluto ≥ 10¹² o < 10⁻⁹ se muestran en notación exponencial.
-- **Tests**: `node --test calculator.test.js` cubre precisión encadenada, Backspace, navegación/atajos del historial, el panel conmutable (visibilidad, `aria-expanded`, persistencia), el selector de temas (aplicación, aislamiento del estado, persistencia, valor desconocido, ausencia de almacenamiento, teclado) y el modo científico (conmutador y `aria-pressed`, persistencia, valor desconocido, ausencia de almacenamiento, aislamiento del estado, semántica de las unarias, errores de dominio, potencia y grados). Ni el posicionamiento del panel, ni los colores, ni la rejilla del bloque científico tienen test: la comprobación visual sigue siendo manual.
+- **Tests**: `node --test calculator.test.js` cubre precisión encadenada, Backspace, porcentaje, cambio de signo, navegación/atajos del historial, reutilización de entradas y contador, el panel conmutable (visibilidad, `aria-expanded`, persistencia), el selector de temas (aplicación, aislamiento del estado, persistencia, valor desconocido, ausencia de almacenamiento, teclado) y el modo científico (conmutador y `aria-pressed`, persistencia, valor desconocido, ausencia de almacenamiento, aislamiento del estado, semántica de las unarias, errores de dominio, potencia y grados). Ni el posicionamiento del panel, ni los colores, ni la rejilla del bloque científico tienen test: la comprobación visual sigue siendo manual.
 - **Persistencia sobre `file://`**: abriendo `index.html` por doble clic, Safari bloquea `localStorage` (`SecurityError`) y Firefox es inconsistente; Chrome suele funcionar. Cuando el almacenamiento no está disponible, el historial, el tema y el modo científico funcionan **en memoria durante la sesión** y se pierden al recargar — la calculadora sigue funcionando igual. Para persistencia garantizada, sirve la app con `python3 -m http.server 8000`.
-- **Historial**: solo lectura. No se puede reutilizar una entrada con clic, ni borrarlas de una en una, ni exportarlas.
+- **Historial**: las entradas no se pueden borrar de una en una ni exportar. Se reutiliza el resultado redondeado que se ve, no el valor interno completo.
 - **Temas**: los 8 son fijos. No hay modo automático claro/oscuro (`prefers-color-scheme`), ni transición al cambiar de paleta, ni colores personalizables.
 - **Modo científico**: sin paréntesis ni precedencia de operadores, sin conmutador RAD/DEG, sin hiperbólicas ni factorial, y sin arcoseno/arcocoseno/arcotangente.
-- **Fuera de alcance**: porcentaje, cambio de signo y memoria (`M+`, `MR`).
+- **Fuera de alcance**: memoria (`M+`, `MR`).
