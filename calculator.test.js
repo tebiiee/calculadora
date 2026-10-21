@@ -323,14 +323,14 @@ test('el bloque científico arranca oculto y el botón lo declara con aria-contr
   assert.match(html, /id="modo-toggle"[^>]*aria-controls="teclado-cientifico"/);
 });
 
-test('el teclado básico conserva sus 18 teclas por delante del bloque científico', () => {
+test('el teclado básico conserva sus 20 teclas por delante del bloque científico', () => {
   const html = readFileSync('index.html', 'utf8');
   const teclado = html.slice(html.indexOf('id="teclado"'), html.indexOf('</main>'));
   const basico = teclado.slice(0, teclado.indexOf('id="teclado-cientifico"'));
   const cientifico = teclado.slice(teclado.indexOf('id="teclado-cientifico"'));
 
-  // 18 botones en 20 celdas: `AC` y `0` ocupan dos columnas cada uno.
-  assert.equal(basico.match(/<button/g).length, 18);
+  // 20 botones en las 20 celdas de la rejilla de 4 columnas.
+  assert.equal(basico.match(/<button/g).length, 20);
   assert.equal(cientifico.match(/<button/g).length, 11);
 });
 
@@ -340,4 +340,105 @@ test('el historial se renderiza fuera de la tarjeta de la calculadora', () => {
 
   assert.equal(calculadora.includes('id="historial"'), false);
   assert.match(html, /id="historial-toggle"[^>]*aria-controls="historial"/);
+});
+
+test('el porcentaje con + o − pendiente es un porcentaje del operando acumulado', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('2'); inputDigit('0'); inputDigit('0'); chooseOperator('+'); inputDigit('1'); inputDigit('0'); porcentaje();");
+  assert.equal(calculator.evaluate('Number(state.current)'), 20);
+
+  calculator.evaluate('equals();');
+  assert.equal(calculator.evaluate('Number(state.current)'), 220);
+  // El % es entrada, no evaluación: solo el = deja una entrada.
+  assert.equal(calculator.evaluate('JSON.stringify(historial.map((e) => e.expresion))'), '["200 + 20"]');
+
+  calculator.evaluate("clear(); inputDigit('2'); inputDigit('0'); inputDigit('0'); chooseOperator('-'); inputDigit('5'); porcentaje(); equals();");
+  assert.equal(calculator.evaluate('Number(state.current)'), 190);
+});
+
+test('el porcentaje con × o ÷ pendiente, o sin operación, divide entre 100', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('2'); inputDigit('0'); inputDigit('0'); chooseOperator('*'); inputDigit('1'); inputDigit('0'); porcentaje();");
+  assert.equal(calculator.evaluate('Number(state.current)'), 0.1);
+  calculator.evaluate('equals();');
+  assert.equal(calculator.evaluate('Number(state.current)'), 20);
+
+  calculator.evaluate("clear(); inputDigit('5'); inputDigit('0'); porcentaje();");
+  assert.equal(calculator.evaluate('Number(state.current)'), 0.5);
+  // Un dígito después del % empieza otro operando.
+  calculator.evaluate("inputDigit('7');");
+  assert.equal(calculator.evaluate('state.current'), '7');
+});
+
+test('la tecla % aplica el porcentaje y el error lo bloquea', () => {
+  const calculator = loadCalculator();
+  calculator.keydown('5');
+  calculator.keydown('%');
+  assert.equal(calculator.evaluate('Number(state.current)'), 0.05);
+
+  calculator.evaluate("clear(); inputDigit('1'); chooseOperator('/'); inputDigit('0'); equals(); porcentaje();");
+  assert.equal(calculator.evaluate('state.error'), true);
+  assert.equal(calculator.evaluate('state.current'), '0');
+});
+
+test('cambiar de signo alterna el operando en edición y se puede seguir escribiendo', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('1'); inputDigit('2'); cambiarSigno();");
+  assert.equal(calculator.evaluate('state.current'), '-12');
+  calculator.evaluate("inputDigit('3');");
+  assert.equal(calculator.evaluate('state.current'), '-123');
+  calculator.evaluate('cambiarSigno();');
+  assert.equal(calculator.evaluate('state.current'), '123');
+
+  // Sobre 0 no aparece un -0.
+  calculator.evaluate('clear(); cambiarSigno();');
+  assert.equal(calculator.evaluate('state.current'), '0');
+
+  // Borrar hasta un -0 residual deja 0, no un -0 al que se le pegan dígitos.
+  calculator.evaluate("clear(); inputDecimal(); inputDigit('5'); cambiarSigno(); backspace(); backspace();");
+  calculator.evaluate("inputDigit('3');");
+  assert.equal(calculator.evaluate('state.current'), '3');
+});
+
+test('cambiar de signo un resultado lo deja como operando', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('2'); chooseOperator('+'); inputDigit('3'); equals(); cambiarSigno(); chooseOperator('+'); inputDigit('1'); equals();");
+  assert.equal(calculator.evaluate('Number(state.current)'), -4);
+
+  // Con el operador recién elegido, niega el valor mostrado como operando nuevo.
+  calculator.evaluate("clear(); inputDigit('8'); chooseOperator('+'); cambiarSigno(); equals();");
+  assert.equal(calculator.evaluate('Number(state.current)'), 0);
+});
+
+test('tocar una entrada del historial la usa como operando sin duplicarla', () => {
+  const calculator = loadCalculator();
+  calculator.evaluate("inputDigit('7'); chooseOperator('+'); inputDigit('8'); equals(); clear(); inputDigit('2'); chooseOperator('+');");
+
+  calculator.elemento('historial-lista').listeners.click({
+    target: { closest: () => ({ dataset: { indice: '0' } }) },
+  });
+  assert.equal(calculator.elemento('resultado').textContent, '15');
+  assert.equal(calculator.evaluate('historial.length'), 1);
+
+  calculator.evaluate('equals();');
+  assert.equal(calculator.evaluate('Number(state.current)'), 17);
+});
+
+test('cada entrada del historial es un botón y el contador refleja el tope', () => {
+  const calculator = loadCalculator();
+  assert.equal(calculator.elemento('historial-contador').textContent, '0 de 20');
+
+  calculator.evaluate("inputDigit('2'); chooseOperator('+'); inputDigit('3'); equals(); render();");
+  const [item] = calculator.elemento('historial-lista').children;
+  const [boton] = item.children;
+  assert.equal(boton.type, 'button');
+  assert.equal(boton.dataset.indice, '0');
+  assert.equal(calculator.elemento('historial-contador').textContent, '1 de 20');
+});
+
+test('el teclado básico ofrece % y ± y una pista de que acepta el teclado físico', () => {
+  const html = readFileSync('index.html', 'utf8');
+  assert.match(html, /data-action="percent"/);
+  assert.match(html, /data-action="sign"/);
+  assert.match(html, /También podés usar el teclado/);
 });

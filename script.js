@@ -26,6 +26,7 @@ const elResultado = document.getElementById('resultado');
 const elExpresion = document.getElementById('expresion');
 const elHistorialLista = document.getElementById('historial-lista');
 const elHistorialVacio = document.getElementById('historial-vacio');
+const elHistorialContador = document.getElementById('historial-contador');
 const elHistorial = document.getElementById('historial');
 const elHistorialToggle = document.getElementById('historial-toggle');
 const elTema = document.getElementById('tema');
@@ -304,12 +305,46 @@ function inputConstante(nombre) {
   state.esperandoOperando = false;
 }
 
+/** Como en una calculadora de bolsillo: con + o − pendiente, `200 + 10 %` es
+ * el 10 % de 200; con cualquier otra operación (o ninguna) es x/100. Igual que
+ * una constante, es entrada y no evaluación: no se registra en el historial. */
+function porcentaje() {
+  if (state.error) return;
+  const x = Number(state.current);
+  const sumaResta = state.operator === '+' || state.operator === '-';
+  state.current = String(sumaResta ? (state.previous * x) / 100 : x / 100);
+  state.overwrite = true;
+  state.esperandoOperando = false;
+}
+
+function cambiarSigno() {
+  if (state.error) return;
+  // Un resultado o el operando recién acumulado: el valor negado pasa a ser el operando.
+  if (state.overwrite) {
+    state.current = String(-Number(state.current));
+    state.esperandoOperando = false;
+    return;
+  }
+  if (state.current === '0') return; // en edición no hay -0
+  state.current = state.current.startsWith('-') ? state.current.slice(1) : `-${state.current}`;
+}
+
+/** Como una constante: sustituye el operando en pantalla y no duplica la entrada. */
+function usarEntrada(indice) {
+  const entrada = historial[indice];
+  if (state.error || !entrada) return;
+  state.current = String(Number(entrada.resultado));
+  state.overwrite = true;
+  state.esperandoOperando = false;
+}
+
 function backspace() {
   if (state.error) return;
   // Un resultado o un operador recién elegido no está en modo de edición.
   if (state.overwrite) return;
   const recortado = state.current.slice(0, -1);
-  state.current = recortado === '' || recortado === '-' ? '0' : recortado;
+  // '-0' sale de borrar un '-0.5': a ese residuo se le pegarían los dígitos.
+  state.current = ['', '-', '-0'].includes(recortado) ? '0' : recortado;
   state.overwrite = false;
 }
 
@@ -340,10 +375,17 @@ function render() {
 /** Reconstrucción completa: 20 nodos como máximo, siempre con textContent. */
 function renderHistorial() {
   elHistorialVacio.hidden = historial.length > 0;
+  elHistorialContador.textContent = `${historial.length} de ${MAX_HISTORIAL}`;
   elHistorialLista.textContent = '';
-  for (const entrada of historial) {
+  historial.forEach((entrada, indice) => {
     const item = document.createElement('li');
     item.className = 'historial-item';
+
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'historial-entrada';
+    boton.dataset.indice = String(indice);
+    boton.title = 'Usar este resultado';
 
     const expresion = document.createElement('span');
     expresion.className = 'historial-expresion';
@@ -353,9 +395,10 @@ function renderHistorial() {
     resultado.className = 'historial-resultado';
     resultado.textContent = `= ${entrada.resultado}`;
 
-    item.append(expresion, resultado);
+    boton.append(expresion, resultado);
+    item.append(boton);
     elHistorialLista.append(item);
-  }
+  });
 }
 
 const ACCIONES = {
@@ -363,6 +406,8 @@ const ACCIONES = {
   clear,
   backspace,
   decimal: inputDecimal,
+  percent: porcentaje,
+  sign: cambiarSigno,
 };
 
 document.getElementById('teclado').addEventListener('click', (e) => {
@@ -377,6 +422,17 @@ document.getElementById('teclado').addEventListener('click', (e) => {
   else if (fn !== undefined) aplicarFuncion(fn);
   else if (constante !== undefined) inputConstante(constante);
   render();
+});
+
+elHistorialLista.addEventListener('click', (e) => {
+  const boton = e.target.closest('[data-indice]');
+  if (!boton) return;
+  const { indice } = boton.dataset;
+  usarEntrada(Number(indice));
+  render();
+  // render() reconstruye la lista y el foco caería al body. Solo se devuelve si
+  // se activó con teclado (detail 0): tras un clic, Enter debe seguir siendo '='.
+  if (e.detail === 0) elHistorialLista.querySelector(`[data-indice="${indice}"]`).focus();
 });
 
 // Listener propio: colgarlo de #teclado colisionaría con el mapa ACCIONES.
@@ -420,6 +476,7 @@ document.addEventListener('keydown', (e) => {
   // Único atajo del modo científico, y solo con el modo activo: el básico no
   // gana comportamiento oculto. Las letras (s, c, l) chocan con C = limpiar.
   else if (k === '^' && modoCientifico) chooseOperator('^');
+  else if (k === '%') porcentaje();
   else if (k === 'Enter' || k === '=') { e.preventDefault(); equals(); }
   else if (k === 'Backspace') { e.preventDefault(); backspace(); }
   else if (k === 'Escape' || k === 'c' || k === 'C') clear();

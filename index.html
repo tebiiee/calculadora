@@ -35,8 +35,9 @@
       </div>
 
       <div class="teclado" id="teclado">
-        <button type="button" class="tecla accion doble" data-action="clear">AC</button>
+        <button type="button" class="tecla accion" data-action="clear">AC</button>
         <button type="button" class="tecla accion" data-action="backspace" aria-label="Borrar último carácter">⌫</button>
+        <button type="button" class="tecla accion" data-action="percent" aria-label="Porcentaje">%</button>
         <button type="button" class="tecla operador" data-op="/" aria-label="Dividir">÷</button>
 
         <button type="button" class="tecla" data-digit="7">7</button>
@@ -54,7 +55,8 @@
         <button type="button" class="tecla" data-digit="3">3</button>
         <button type="button" class="tecla operador" data-op="+" aria-label="Sumar">+</button>
 
-        <button type="button" class="tecla doble" data-digit="0">0</button>
+        <button type="button" class="tecla accion" data-action="sign" aria-label="Cambiar signo">±</button>
+        <button type="button" class="tecla" data-digit="0">0</button>
         <button type="button" class="tecla" data-action="decimal" aria-label="Separador decimal">.</button>
         <button type="button" class="tecla igual" data-action="equals" aria-label="Igual">=</button>
 
@@ -76,11 +78,14 @@
           <button type="button" class="tecla cientifica" data-fn="tan" aria-label="Tangente en grados">tan</button>
         </div>
       </div>
+
+      <p class="pista">También podés usar el teclado</p>
     </main>
 
     <aside class="historial" id="historial">
       <div class="historial-cabecera">
         <h2 class="historial-titulo">Historial</h2>
+        <span class="historial-contador" id="historial-contador">0 de 20</span>
         <button type="button" class="historial-limpiar" id="limpiar-historial">Limpiar historial</button>
       </div>
       <p class="historial-vacio" id="historial-vacio">Todavía no hay operaciones.</p>
