@@ -267,10 +267,6 @@ body {
   outline-offset: 2px;
 }
 
-.tecla.doble {
-  grid-column: span 2;
-}
-
 .tecla.operador {
   background: var(--operador);
 }
@@ -283,6 +279,13 @@ body {
   background: var(--acento);
   color: var(--sobre-acento);
   font-weight: 700;
+}
+
+.pista {
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--texto-tenue);
 }
 
 /* Ocupa la fila entera del teclado y repite sus 4 columnas: las teclas nuevas
@@ -369,6 +372,14 @@ body {
   color: var(--texto);
 }
 
+/* Empuja «Limpiar historial» al extremo y deja el contador junto al título. */
+.historial-contador {
+  margin-right: auto;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-tenue);
+}
+
 .historial-vacio {
   margin: 0;
   font-size: 0.85rem;
@@ -390,14 +401,32 @@ body {
   outline-offset: 3px;
 }
 
-.historial-item {
+/* Toda la fila es el botón: reutiliza el resultado como operando. */
+.historial-entrada {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  padding: 6px 2px;
+  width: 100%;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--texto);
+  font-family: inherit;
   font-size: 0.9rem;
   font-variant-numeric: tabular-nums;
+  text-align: left;
+  cursor: pointer;
+}
+
+.historial-entrada:hover {
+  background: var(--tecla);
+}
+
+.historial-entrada:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: -2px;
 }
 
 .historial-item + .historial-item {
