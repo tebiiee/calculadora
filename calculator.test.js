@@ -442,3 +442,11 @@ test('el teclado básico ofrece % y ± y una pista de que acepta el teclado fís
   assert.match(html, /data-action="sign"/);
   assert.match(html, /También podés usar el teclado/);
 });
+
+test('la notación exponencial no muestra ceros de relleno en la mantisa', () => {
+  const calculator = loadCalculator();
+  assert.equal(calculator.evaluate('formatNumber(1e12)'), '1e+12');
+  assert.equal(calculator.evaluate('formatNumber(999999999999 * 999999)'), '9.99999e+17');
+  assert.equal(calculator.evaluate('formatNumber(-2.5e-10)'), '-2.5e-10');
+  assert.equal(calculator.evaluate('formatNumber(1.234567e15)'), '1.234567e+15');
+});

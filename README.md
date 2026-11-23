@@ -1,5 +1,7 @@
 # Calculadora
 
+> **Archivado (noviembre de 2026).** Fue un experimento y quedó terminado: el repositorio es de solo lectura y no recibe más cambios.
+
 Calculadora web con las cuatro operaciones básicas (suma, resta, multiplicación y división), porcentaje, cambio de signo y un modo científico conmutable, escrita en HTML, CSS y JavaScript vanilla. Sin dependencias, sin build step y sin gestor de paquetes.
 
 ## Cómo abrirla
