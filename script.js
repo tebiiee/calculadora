@@ -174,7 +174,7 @@ function aplicarModo(cientifico) {
 function formatNumber(n) {
   if (n === 0) return '0';
   const abs = Math.abs(n);
-  if (abs >= 1e12 || abs < 1e-9) return n.toExponential(6);
+  if (abs >= 1e12 || abs < 1e-9) return n.toExponential(6).replace(/\.?0+e/, 'e');
   return String(parseFloat(n.toPrecision(12)));
 }
 
